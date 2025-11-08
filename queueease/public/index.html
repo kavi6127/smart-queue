@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueueEase — Government Queue System</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+
+    header {
+      background: #0059ff;
+      color: #fff;
+      padding: 20px 0;
+      text-align: center;
+      font-size: 1.8em;
+      letter-spacing: 0.5px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.1);
+      padding: 25px;
+    }
+
+    h2 {
+      color: #0059ff;
+      margin-bottom: 15px;
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #0059ff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #0040c8;
+    }
+
+    .status-box {
+      background: #f0f6ff;
+      border-left: 4px solid #0059ff;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .queue-section {
+      margin-top: 40px;
+    }
+
+    .token-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .token-list li {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #555;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    QueueEase — Government Queue System
+  </header>
+
+  <div class="container">
+    <h2>🎫 Get Your Token</h2>
+    <form id="tokenForm">
+      <label>Name</label>
+      <input id="name" placeholder="Enter your name" required />
+
+      <label>Service Type</label>
+      <select id="service">
+        <option>General Inquiry</option>
+        <option>Document Verification</option>
+        <option>License Renewal</option>
+        <option>Bill Payment</option>
+      </select>
+
+      <button type="submit">Get Token</button>
+    </form>
+
+    <div id="result" class="status-box" style="display:none;">
+      <h3>Your Token: <span id="tokenSpan"></span></h3>
+      <p>Position in Queue: <strong id="posSpan"></strong></p>
+    </div>
+
+    <div class="queue-section">
+      <h2>📊 Live Queue Status</h2>
+      <p>Currently Serving: <strong id="servingSpan">—</strong></p>
+      <p>Total Waiting: <strong id="countSpan">0</strong></p>
+      <h4>Next Tokens</h4>
+      <ul id="nextList" class="token-list"></ul>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2025 QueueEase | Built for Smart Governance
+  </footer>
+
+  <script>
+    async function postJson(url, body){
+      const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      return res.json();
+    }
+    async function getJson(url){
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    const form = document.getElementById('tokenForm');
+    const result = document.getElementById('result');
+    const tokenSpan = document.getElementById('tokenSpan');
+    const posSpan = document.getElementById('posSpan');
+    const servingSpan = document.getElementById('servingSpan');
+    const countSpan = document.getElementById('countSpan');
+    const nextList = document.getElementById('nextList');
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const service = document.getElementById('service').value;
+      const data = await postJson('/api/token', { name, service });
+      if (data.ok) {
+        tokenSpan.textContent = data.token;
+        posSpan.textContent = data.position;
+        result.style.display = 'block';
+      }
+    });
+
+    async function refreshStatus() {
+      const s = await getJson('/api/status');
+      if (s.ok) {
+        servingSpan.textContent = s.serving ? `${s.serving.token} — ${s.serving.name}` : '—';
+        countSpan.textContent = s.queueCount;
+        nextList.innerHTML = s.nextTokens.map(t => `<li>${t.token} — ${t.name} (${t.service})</li>`).join('');
+      }
+    }
+
+    setInterval(refreshStatus, 2000);
+    refreshStatus();
+  </script>
+</body>
+</html>
